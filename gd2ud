@@ -1,0 +1,59 @@
+#!/bin/sh
+
+#File: /ect/init.d/gd2ud
+
+### BEGIN INIT INFO
+# Provides:           gd2ud
+# Required-Start:
+# Required-Stop:
+# Default-Start:
+# Default Stop:
+# Short-Description:  starts gd2u
+# Description:        starts the Google Domains Dynamic DNS Updater
+### END INIT INFO
+
+DAEMON=/opt/gd2u/gd2u.py
+DAEMON_OPTS=""
+NAME=gd2u
+DESC="gd2u"
+PIDFILE=/var/run/$NAME.pid
+
+case "$1" in
+  start)
+    echo -n "Starting daemon: "$NAME
+    start-stop-daemon --start --make-pidfile --pidfile $PIDFILE --exec $DAEMON --oknodo --quiet --background
+    echo "."
+  ;;
+  stop)
+    echo -n "Stopping daemon: "$NAME
+    start-stop-daemon --stop --remove-pidfile --pidfile $PIDFILE --retry 10 --oknodo --quiet
+    echo "."
+  ;;
+  restart)
+    echo -n "Restarting daemon: "$NAME
+    start-stop-daemon --stop --remove-pidfile --pidfile $PIDFILE --retry 10 --oknodo --quiet
+    start-stop-daemon --start --make-pidfile --pidfile $PIDFILE --exec $DAEMON --oknodo --quiet --background
+    echo "."
+  ;;
+  status)
+    start-stop-daemon --status --pidfile $PIDFILE
+    case "$?" in
+      0)
+        echo $NAME" is running"
+      ;;
+      1)
+        echo $NAME" is not running, but "$PIDFILE" exists"
+      ;;
+      3)
+        echo $NAME" is not running"
+      ;;
+      4)
+        echo $NAME" status cannot be determined"
+    esac
+  ;;
+  *)
+    echo "Usage: "$1" {start|stop|restart|status}"
+    exit 1
+esac
+
+exit 0
