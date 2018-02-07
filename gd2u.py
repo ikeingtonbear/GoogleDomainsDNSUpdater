@@ -31,7 +31,6 @@ def updateRecord(ip, domain, username, password):
     data = {"hostname" : domain, "myip" : ip}
     try:
         r = requests.post(url, data=data)
-        print(r.text)
     except:
         exit("Unable to update Google Domains Dynamic DNS Record")
 
