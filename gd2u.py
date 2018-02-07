@@ -36,10 +36,11 @@ def updateRecord(ip, domain, username, password):
 
 def run():
     currentIP = '0.0.0.0'
-    configs = readConfigFile('gd2u.conf')
+    configs = readConfigFile('/opt/gd2u/gd2u.conf')
 
     while True:
         if ipChanged(currentIP):
+            currentIP = getIP()
             for domain in configs.get('domains'):
                 updateRecord(currentIP, domain.get('subdomain'), domain.get('username'), domain.get('password'))
         sleep(configs.get('global').get('check_interval'))

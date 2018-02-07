@@ -26,7 +26,7 @@ case "$1" in
   ;;
   stop)
     echo -n "Stopping daemon: "$NAME
-    start-stop-daemon --stop --remove-pidfile --pidfile $PIDFILE --retry 10 --oknodo --quiet
+    start-stop-daemon --stop --remove-pidfile --pidfile $PIDFILE --oknodo --quiet
     echo "."
   ;;
   restart)
