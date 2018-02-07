@@ -2,7 +2,7 @@
 import requests
 import yaml
 
-from sys import exit()
+from sys import exit
 from time import sleep
 
 def readConfigFile(file):
@@ -26,23 +26,24 @@ def ipChanged(ip):
     else:
         return False
 
-def updateRecord(domain, username, password):
+def updateRecord(ip, domain, username, password):
     url = "https://{username}:{password}@domains.google.com/nic/update".format(username=username, password=password)
-    data = {"hostname" : domain, "myip" : self.ip}
+    data = {"hostname" : domain, "myip" : ip}
     try:
-        requests.post(url, data=data)
+        r = requests.post(url, data=data)
+        print(r.text)
     except:
         exit("Unable to update Google Domains Dynamic DNS Record")
 
 def run():
     currentIP = '0.0.0.0'
-    configs = readConfigFile('/opt/gd2u/gd2u.conf')
+    configs = readConfigFile('gd2u.conf')
 
     while True:
         if ipChanged(currentIP):
             for domain in configs.get('domains'):
-                updateRecord(domain.get('subdomain'), domain.get('username'), domain.get('password'))
-        sleep(configs.get('global'.get('check_interval')))
+                updateRecord(currentIP, domain.get('subdomain'), domain.get('username'), domain.get('password'))
+        sleep(configs.get('global').get('check_interval'))
 
 if __name__ == "__main__":
     run()
