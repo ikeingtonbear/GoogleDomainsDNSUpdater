@@ -7,8 +7,12 @@ import yaml
 from time import sleep
 
 class GoogleDomainsDNSUpdateDaemon(multiprocessing.Process):
+    """
+    """
 
     def __init__(self, configFile):
+        """
+        """
         multiprocessing.Process.__init__()
         self.daemon = True
         self.running = True
@@ -99,7 +103,7 @@ class GoogleDomainsDNSUpdateDaemon(multiprocessing.Process):
                 #TODO shutdown
             elif response =="911":
                 self.logger.warning("Error occurred on Google's behalf")
-                #TODO wait, try again? change wait time?
+                #TODO add record to retry queue
             else:
                 self.logger.critical("Unknown respone '%s' from Google". response)
 
@@ -116,6 +120,7 @@ class GoogleDomainsDNSUpdateDaemon(multiprocessing.Process):
             if self.ipChanged():
                 for domain in self.configs.get('domains'):
                     self.updateRecord(domain.get('subdomain'), domain.get('username'), domain.get('password'))
+                #TODO retry records that errored out on 911
             sleep(self.configs.get('global').get('update_interval'))
 
         self.logger.info("Stopping gd2ud")
