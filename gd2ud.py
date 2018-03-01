@@ -1,7 +1,11 @@
 #!/usr/bin/python3
+"""
+"""
 import logging
 import multiprocessing
 import requests
+import signal
+import sys
 import yaml
 
 from time import sleep
@@ -17,25 +21,47 @@ class GoogleDomainsDNSUpdateDaemon(multiprocessing.Process):
         self.daemon = True
         self.running = True
         self.ip = "0.0.0.0"
-        self.readConfigFile(configFile)
+        self.configFile = configFile
+        self.readConfigFile(self.configFile)
         self.configureLogging()
+
+    def exitGracefully(self):
+        """
+        """
+        self.running = False
+
+    def reload(self):
+        """
+        """
+        self.logger.info("Reloading configuration from %s", self.configFile)
+        self.readConfigFile(self.configFile)
+
+    def registerSignalHandlers(self):
+        """
+        """
+        signal.signal(signal.SIGABRT, self.exitGracefully)
+        signal.signal(signal.SIGTERM, self.exitGracefully)
+        signal.signal(signal.SIGINT, self.exitGracefully)
+        signal.signal(signal.SIGQUIT, self.exitGracefully)
+        signal.signal(signal.SIGSTOP, self.exitGracefully)
+        signal.signal(signal.SIGHUP, self.reload)
 
     def configureLogging(self):
         """
         """
-            #TODO Validate log path
-            self.logger = logging.getLogger("gd2u")
-            self.logger.setLevel(logging.DEBUG)
-            logFormat = logging.Formatter("%(asctime)s: %(levelname)s - %(message)s")
-            logFile = logging.FileHandler(self.configs.get("global").get("log_path"))
-            logFile.setLevel(logging.INFO)
-            logFile.setFormatter(logFormat)
-            self.logger.addHander(logFile)
+        #TODO Validate log path
+        self.logger = logging.getLogger("gd2u")
+        self.logger.setLevel(logging.DEBUG)
+        logFormat = logging.Formatter("%(asctime)s: %(levelname)s - %(message)s")
+        logFile = logging.FileHandler(self.configs.get("global").get("log_path"))
+        logFile.setLevel(logging.INFO)
+        logFile.setFormatter(logFormat)
+        self.logger.addHander(logFile)
 
-            logStream = logging.StreamHandler()
-            logStream.setLevel(logging.DEBUG)
-            logStream.setFormatter(logFormat)
-            self.logger.addHandler(logStream)
+        logStream = logging.StreamHandler()
+        logStream.setLevel(logging.DEBUG)
+        logStream.setFormatter(logFormat)
+        self.logger.addHandler(logStream)
 
     def readConfigFile(self, file):
         """
@@ -97,10 +123,10 @@ class GoogleDomainsDNSUpdateDaemon(multiprocessing.Process):
                 self.logger.warning("%s is not a fully-qualified domain name", domain)
             elif response =="badagent":
                 self.logger.critical("gd2ud is making bad requests")
-                #TODO shutdown
+                self.exitGracefully()
             elif response =="abuse":
                 self.logger.critical("gd2ud has been blocked for failure to interpret responses correctly")
-                #TODO shutdown
+                self.exitGracefully()
             elif response =="911":
                 self.logger.warning("Error occurred on Google's behalf")
                 #TODO add record to retry queue
@@ -110,6 +136,7 @@ class GoogleDomainsDNSUpdateDaemon(multiprocessing.Process):
         except:
             #Handle exceptions
             self.logger.exception("Exception.")
+            sys.exit(-1)
 
     def run(self):
         """
@@ -121,9 +148,13 @@ class GoogleDomainsDNSUpdateDaemon(multiprocessing.Process):
                 for domain in self.configs.get('domains'):
                     self.updateRecord(domain.get('subdomain'), domain.get('username'), domain.get('password'))
                 #TODO retry records that errored out on 911
-            sleep(self.configs.get('global').get('update_interval'))
+            if not self.running:
+                break
+            else:
+                sleep(self.configs.get('global').get('update_interval'))
 
         self.logger.info("Stopping gd2ud")
+        sys.exit(0)
 
 if __name__ == "__main__":
     gd2ud = GoogleDomainsDNSUpdateDaemon("/opt/gd2u/gd2u.conf")
